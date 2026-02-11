@@ -213,16 +213,16 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-[1800px] mx-auto px-10 mt-20 space-y-16">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 px-6">
+      <main className="max-w-[1800px] mx-auto px-10 mt-12 space-y-12">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 px-6">
           <div className="animate-in slide-in-from-left duration-1000">
-            <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter font-display leading-[0.85] uppercase">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter font-display leading-tight uppercase">
               Pipeline Performance <span className="text-pivott-blue italic">Dashboard</span>
             </h2>
           </div>
-          <div className="glass-box px-10 py-5 rounded-[2rem] border-pivott-blue/10 flex flex-col items-end shadow-2xl">
-            <p className="text-[11px] font-black text-pivott-blue uppercase tracking-[0.4em] mb-1 opacity-60">System Timestamp</p>
-            <p className="text-2xl font-black text-pivott-sand font-display italic tracking-tight">
+          <div className="glass-box px-8 py-4 rounded-[1.5rem] border-pivott-blue/10 flex flex-col items-end shadow-2xl">
+            <p className="text-[10px] font-black text-pivott-blue uppercase tracking-[0.4em] mb-1 opacity-60">System Status</p>
+            <p className="text-xl font-black text-pivott-sand font-display italic tracking-tight">
               Synced at {state.lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
