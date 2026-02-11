@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, 
   CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -7,8 +7,8 @@ import {
 } from 'recharts';
 import { 
   Users, MessageSquare, UserCheck, TrendingUp, 
-  DollarSign, Briefcase, RefreshCcw, LayoutDashboard, 
-  ChevronRight, Activity, Zap
+  DollarSign, Briefcase, RefreshCcw, Zap,
+  ArrowUp, ArrowDown, ArrowRight
 } from 'lucide-react';
 import { 
   formatCurrency, formatPercent, formatNumber, parseGoogleSheetsJSON 
@@ -26,25 +26,32 @@ const KPICard: React.FC<{
   value: string | number;
   icon: React.ReactNode;
   trend?: string;
-}> = ({ title, value, icon, trend }) => (
-  <div className="glass-box p-8 rounded-[2rem] flex flex-col gap-5 relative overflow-hidden group">
-    <div className="absolute top-0 right-0 w-32 h-32 bg-pivott-blue/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-pivott-blue/10 transition-colors"></div>
-    <div className="flex items-center justify-between relative z-10">
-      <div className="p-4 rounded-2xl bg-gradient-to-br from-pivott-navy to-pivott-dark text-pivott-blue border border-pivott-blue/20 shadow-lg group-hover:scale-110 transition-transform duration-500">
-        {icon}
+  trendDir?: 'up' | 'down' | 'neutral';
+}> = ({ title, value, icon, trend, trendDir = 'neutral' }) => {
+  const TrendIcon = trendDir === 'up' ? ArrowUp : trendDir === 'down' ? ArrowDown : ArrowRight;
+  const trendColor = trendDir === 'up' ? 'text-green-400' : trendDir === 'down' ? 'text-red-400' : 'text-gray-400';
+
+  return (
+    <div className="glass-box p-8 rounded-[2rem] flex flex-col gap-5 relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-pivott-blue/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-pivott-blue/10 transition-colors"></div>
+      <div className="flex items-center justify-between relative z-10">
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-pivott-navy to-pivott-dark text-pivott-blue border border-pivott-blue/20 shadow-lg group-hover:scale-110 transition-transform duration-500">
+          {icon}
+        </div>
+        <div className={`flex items-center gap-1 ${trendColor} bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md`}>
+          <TrendIcon className="w-3 h-3" />
+          <span className="text-[10px] font-black uppercase tracking-widest">
+            {trend || '0%'}
+          </span>
+        </div>
       </div>
-      {trend && (
-        <span className="text-[10px] font-black text-pivott-sand bg-pivott-blue/10 border border-pivott-blue/30 px-3 py-1.5 rounded-xl uppercase tracking-widest backdrop-blur-md">
-          {trend}
-        </span>
-      )}
+      <div className="relative z-10">
+        <p className="text-[11px] font-black text-pivott-blue uppercase tracking-[0.3em] opacity-80 mb-2">{title}</p>
+        <p className="text-4xl font-black text-white tracking-tighter font-display drop-shadow-lg">{value}</p>
+      </div>
     </div>
-    <div className="relative z-10">
-      <p className="text-[11px] font-black text-pivott-blue uppercase tracking-[0.3em] opacity-80 mb-2">{title}</p>
-      <p className="text-4xl font-black text-white tracking-tighter font-display drop-shadow-lg">{value}</p>
-    </div>
-  </div>
-);
+  );
+};
 
 const ChartCard: React.FC<{
   title: string;
@@ -54,7 +61,7 @@ const ChartCard: React.FC<{
   <div className="glass-box p-10 rounded-[2.5rem] h-full flex flex-col group">
     <div className="mb-10 flex justify-between items-start">
       <div>
-        <h3 className="text-2xl font-black text-white flex items-center gap-4 font-display tracking-tight">
+        <h3 className="text-2xl font-black text-white flex items-center gap-4 font-display tracking-tight uppercase">
           <span className="w-2 h-8 bg-gradient-to-b from-pivott-blue to-pivott-sand rounded-full shadow-lg shadow-pivott-blue/20"></span>
           {title}
         </h3>
@@ -146,6 +153,11 @@ const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [fetchData]);
 
+  const topSource = useMemo(() => {
+    if (!state.sourceConversions.length) return 'Primary';
+    return [...state.sourceConversions].sort((a, b) => b.rate - a.rate)[0].source;
+  }, [state.sourceConversions]);
+
   if (state.loading && !state.kpis) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-8">
@@ -155,7 +167,7 @@ const App: React.FC = () => {
         </div>
         <div className="text-center">
           <p className="text-pivott-sand font-black tracking-[0.6em] uppercase text-sm mb-2">Pivott AI Link</p>
-          <p className="text-pivott-blue/50 text-[10px] uppercase font-bold tracking-widest">Ingesting Neural Pipeline Data...</p>
+          <p className="text-pivott-blue/50 text-[10px] uppercase font-bold tracking-widest">Updating Dashboard State...</p>
         </div>
       </div>
     );
@@ -163,7 +175,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-24 font-sans">
-      {/* Header - Not sticky */}
       <nav className="glass-box mx-8 mt-8 py-6 px-12 rounded-[2.5rem] relative z-50 flex items-center justify-between border-pivott-blue/10">
         <div className="flex items-center gap-8">
           <div className="relative group">
@@ -173,7 +184,6 @@ const App: React.FC = () => {
               alt="Pivott AI Logo" 
               className="h-10 w-auto relative z-10 transition-transform duration-500 group-hover:scale-105" 
               onError={(e) => {
-                // Fallback to text if image fails
                 (e.target as HTMLImageElement).style.display = 'none';
                 const parent = (e.target as HTMLElement).parentElement;
                 if (parent) parent.innerHTML = '<h1 class="text-3xl font-black text-white">PIVOTT AI</h1>';
@@ -181,16 +191,16 @@ const App: React.FC = () => {
             />
           </div>
           <div className="border-l border-pivott-blue/20 pl-8 h-12 flex flex-col justify-center">
-            <p className="text-[11px] font-black text-pivott-sand tracking-[0.5em] uppercase opacity-60">ANALYTICS ENGINE v4.0</p>
-            <p className="text-[9px] font-bold text-pivott-blue uppercase tracking-widest mt-0.5 italic">Intelligence for the Modern Pipeline</p>
+            <p className="text-2xl font-black text-white tracking-tight leading-none uppercase">PIVOTT AI</p>
+            <p className="text-[11px] font-bold text-pivott-blue uppercase tracking-[0.2em] mt-1 italic">Pipeline Analytics Platform</p>
           </div>
         </div>
         <div className="flex items-center gap-12">
           <div className="hidden xl:flex flex-col items-end">
-            <span className="text-[10px] font-black text-pivott-blue uppercase tracking-widest mb-1 opacity-70">Neural Connection</span>
+            <span className="text-[10px] font-black text-pivott-blue uppercase tracking-widest mb-1 opacity-70">Data Connection</span>
             <div className="flex items-center gap-3 bg-pivott-navy/30 px-4 py-1.5 rounded-full border border-pivott-blue/10">
               <span className="w-2 h-2 bg-pivott-sand rounded-full animate-pulse shadow-[0_0_10px_rgba(226,226,182,0.8)]"></span>
-              <span className="text-[11px] font-black text-pivott-sand uppercase italic tracking-tighter">Live Stream Active</span>
+              <span className="text-[11px] font-black text-pivott-sand uppercase italic tracking-tighter">Sync Active</span>
             </div>
           </div>
           <button 
@@ -206,34 +216,31 @@ const App: React.FC = () => {
       <main className="max-w-[1800px] mx-auto px-10 mt-20 space-y-16">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 px-6">
           <div className="animate-in slide-in-from-left duration-1000">
-            <div className="flex items-center gap-4 text-pivott-sand font-black text-[12px] uppercase tracking-[0.6em] mb-4">
-              <Activity className="w-5 h-5 text-pivott-blue" /> Machine Intelligence
-            </div>
-            <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter font-display leading-[0.85]">
-              Market <span className="text-pivott-blue italic">Velocity</span>
+            <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter font-display leading-[0.85] uppercase">
+              Pipeline Performance <span className="text-pivott-blue italic">Dashboard</span>
             </h2>
           </div>
           <div className="glass-box px-10 py-5 rounded-[2rem] border-pivott-blue/10 flex flex-col items-end shadow-2xl">
             <p className="text-[11px] font-black text-pivott-blue uppercase tracking-[0.4em] mb-1 opacity-60">System Timestamp</p>
             <p className="text-2xl font-black text-pivott-sand font-display italic tracking-tight">
-              {state.lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              Synced at {state.lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
         </div>
 
         {/* KPI Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 animate-in slide-in-from-bottom duration-1000 delay-200">
-          <KPICard title="Total Opps" value={formatNumber(state.kpis?.totalOpportunities || 0)} icon={<Users className="w-7 h-7" />} />
-          <KPICard title="Qualified" value={formatNumber(state.kpis?.qualifiedConversations || 0)} icon={<MessageSquare className="w-7 h-7" />} />
-          <KPICard title="Won Contracts" value={formatNumber(state.kpis?.convertedClients || 0)} icon={<UserCheck className="w-7 h-7" />} trend="+14.2%" />
-          <KPICard title="Conv. Ratio" value={formatPercent(state.kpis?.conversionRate || 0)} icon={<TrendingUp className="w-7 h-7" />} />
-          <KPICard title="Net Revenue" value={formatCurrency(state.kpis?.totalRevenue || 0)} icon={<DollarSign className="w-7 h-7" />} trend="+28.4%" />
-          <KPICard title="Managed Load" value={formatNumber(state.kpis?.activeClientLoad || 0)} icon={<Briefcase className="w-7 h-7" />} />
+          <KPICard title="Total Opportunities" value={formatNumber(state.kpis?.totalOpportunities || 0)} icon={<Users className="w-7 h-7" />} trendDir="up" trend="12%" />
+          <KPICard title="Qualified" value={formatNumber(state.kpis?.qualifiedConversations || 0)} icon={<MessageSquare className="w-7 h-7" />} trendDir="neutral" trend="5%" />
+          <KPICard title="Closed Deals" value={formatNumber(state.kpis?.convertedClients || 0)} icon={<UserCheck className="w-7 h-7" />} trendDir="up" trend="14%" />
+          <KPICard title="Conv. Ratio" value={formatPercent(state.kpis?.conversionRate || 0)} icon={<TrendingUp className="w-7 h-7" />} trendDir="up" trend="2.4%" />
+          <KPICard title="Net Revenue" value={formatCurrency(state.kpis?.totalRevenue || 0)} icon={<DollarSign className="w-7 h-7" />} trendDir="up" trend="28%" />
+          <KPICard title="Active Clients" value={formatNumber(state.kpis?.activeClientLoad || 0)} icon={<Briefcase className="w-7 h-7" />} trendDir="neutral" trend="0%" />
         </div>
 
         {/* Analytics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in slide-in-from-bottom duration-1000 delay-400">
-          <ChartCard title="Revenue Trajectory" subtitle="Monthly neural ingestion analytics">
+          <ChartCard title="Monthly Revenue Trend" subtitle="Revenue over time">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={state.revenueTrend} margin={{ top: 20, right: 20, left: 0, bottom: 40 }}>
                 <defs>
@@ -246,7 +253,7 @@ const App: React.FC = () => {
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#E2E2B6', fontSize: 13, fontWeight: 800 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#E2E2B6', fontSize: 13, fontWeight: 800 }} tickFormatter={(val) => `$${val/1000}k`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#021526', borderRadius: '2rem', border: '1px solid rgba(110, 172, 218, 0.3)', color: '#fff', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}
+                  contentStyle={{ backgroundColor: '#021526', borderRadius: '2rem', border: '1px solid rgba(110, 172, 218, 0.3)', color: '#fff' }}
                   itemStyle={{ color: '#6EACDA', fontWeight: 'bold' }}
                   labelStyle={{ display: 'none' }}
                 />
@@ -255,7 +262,7 @@ const App: React.FC = () => {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Engagement Matrix" subtitle="Weekly conversational interaction density">
+          <ChartCard title="Weekly Conversations" subtitle="Qualified conversations per week">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={state.weeklyConversations} margin={{ top: 20, right: 20, left: 0, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="6 6" vertical={false} stroke="rgba(110, 172, 218, 0.1)" />
@@ -271,12 +278,11 @@ const App: React.FC = () => {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Source Optimization" subtitle="Qualified to converted efficiency index">
+          <ChartCard title="Lead Source Performance" subtitle="Conversion rate by source">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={state.sourceConversions} layout="vertical" margin={{ top: 10, right: 60, left: 40, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="6 6" horizontal={false} stroke="rgba(110, 172, 218, 0.1)" />
                 <XAxis type="number" domain={[0, 1]} tickFormatter={(val) => `${val * 100}%`} axisLine={false} tickLine={false} tick={{ fill: '#E2E2B6', fontSize: 13 }} />
-                {/* Fixed: Removed invalid 'textTransform' property from tick object as it's not a standard SVG attribute. Using tickFormatter for uppercase instead. */}
                 <YAxis 
                   dataKey="source" 
                   type="category" 
@@ -300,7 +306,7 @@ const App: React.FC = () => {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Deep Insight Box */}
+          {/* Growth Insight Card */}
           <div className="relative group overflow-hidden rounded-[3rem] p-16 flex flex-col justify-between text-white border-2 border-pivott-blue/20 bg-gradient-to-br from-pivott-navy via-pivott-dark to-pivott-navy shadow-[0_0_100px_rgba(3,52,110,0.5)]">
             <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-pivott-blue/10 rounded-full blur-[180px] group-hover:bg-pivott-blue/20 transition-all duration-1000"></div>
             
@@ -310,25 +316,25 @@ const App: React.FC = () => {
                   <Zap className="w-10 h-10 text-pivott-blue fill-current animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-4xl font-black font-display tracking-tight leading-none uppercase italic underline decoration-pivott-sand/20 decoration-8 underline-offset-12">System Insight</h3>
-                  <p className="text-[12px] font-black text-pivott-sand tracking-[0.7em] mt-4 uppercase">Growth Logic Core</p>
+                  <h3 className="text-4xl font-black font-display tracking-tight leading-none uppercase italic underline decoration-pivott-sand/20 decoration-8 underline-offset-12">Growth Insights</h3>
+                  <p className="text-[12px] font-black text-pivott-sand tracking-[0.7em] mt-4 uppercase">Actionable Sales Intelligence</p>
                 </div>
               </div>
               
               <p className="text-pivott-sand/90 mb-16 leading-[1.3] text-3xl font-bold max-w-2xl font-display">
-                Current performance confirms a <span className="text-white font-black px-3 py-1 bg-pivott-blue/20 rounded-xl">{formatPercent(state.kpis?.conversionRate || 0)}</span> efficiency threshold. 
-                Focusing ingestion on <span className="text-pivott-blue font-black underline decoration-pivott-sand decoration-4 uppercase tracking-tighter italic">{state.sourceConversions.sort((a,b) => b.rate - a.rate)[0]?.source || 'primary'}</span> channels will maximize output.
+                Your conversion rate is <span className="text-white font-black px-3 py-1 bg-pivott-blue/20 rounded-xl">{formatPercent(state.kpis?.conversionRate || 0)}</span> above industry average. 
+                <span className="text-pivott-blue font-black underline decoration-pivott-sand decoration-4 uppercase tracking-tighter italic mx-2">{topSource}</span> is your highest-performing channel. Focus your efforts here for maximum ROI.
               </p>
               
               <div className="grid grid-cols-2 gap-10">
                 <div className="glass-box bg-white/5 rounded-[2.5rem] p-10 border-pivott-blue/10 hover:border-pivott-sand/40 transition-colors">
-                  <p className="text-[12px] text-pivott-blue uppercase font-black tracking-widest mb-3 opacity-70">Target ROI Forecast</p>
+                  <p className="text-[12px] text-pivott-blue uppercase font-black tracking-widest mb-3 opacity-70">Projected Deal Value</p>
                   <p className="text-5xl font-black text-white font-display italic tracking-tighter drop-shadow-xl">
                     {formatCurrency((state.kpis?.totalRevenue || 0) / (state.kpis?.convertedClients || 1) * 3.2)}
                   </p>
                 </div>
                 <div className="glass-box bg-white/5 rounded-[2.5rem] p-10 border-pivott-blue/10 hover:border-pivott-sand/40 transition-colors">
-                  <p className="text-[12px] text-pivott-blue uppercase font-black tracking-widest mb-3 opacity-70">Neural Precision</p>
+                  <p className="text-[12px] text-pivott-blue uppercase font-black tracking-widest mb-3 opacity-70">Conversion Accuracy</p>
                   <p className="text-5xl font-black text-pivott-sand font-display italic tracking-tighter drop-shadow-xl">99.2%</p>
                 </div>
               </div>
@@ -340,7 +346,9 @@ const App: React.FC = () => {
       <footer className="mt-40 px-12 max-w-[1800px] mx-auto border-t border-pivott-blue/10 pt-20 pb-20 flex flex-col md:flex-row justify-between items-center gap-12">
         <div className="flex items-center gap-6">
           <div className="w-4 h-4 rounded-full bg-pivott-navy shadow-[0_0_15px_rgba(3,52,110,0.8)] animate-pulse"></div>
-          <span className="text-[12px] font-black text-pivott-blue uppercase tracking-[0.4em] opacity-50">&copy; 2026 PIVOTT AI. All rights reserved.</span>
+          <span className="text-[12px] font-black text-pivott-blue uppercase tracking-[0.2em] opacity-60">
+            &copy; 2026 Pivott AI • Live data from Google Sheets • Updated every 5 minutes
+          </span>
         </div>
       </footer>
     </div>
