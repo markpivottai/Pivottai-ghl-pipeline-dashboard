@@ -23,6 +23,7 @@ export interface SourceConversion {
   qualified: number;
   converted: number;
   rate: number;
+  revenue: number; // Added for direct attribution from Dashboard_Calculations
 }
 
 export interface DashboardState {
