@@ -1,5 +1,5 @@
 {
-  "name": "Pivott AI | Pipeline Performance Dashboard",
-  "description": "Enterprise-grade sales analytics dashboard branded for Pivott AI, featuring live Google Sheets synchronization and actionable growth insights.",
+  "name": "Pivott AI | Enterprise Growth Dashboard",
+  "description": "High-performance analytics dashboard featuring 3D-styled donut charts, multi-vector funnel diagnostics, and revenue attribution modelling synced to Google Sheets.",
   "requestFramePermissions": []
 }
